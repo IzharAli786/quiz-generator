@@ -238,7 +238,7 @@ async function generateQuestionsWithAI() {
             headers: {
                 'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
                 'Content-Type': 'application/json',
-                'HTTP-Referer': 'https://github.com/aakhalidhruv28/Interactive-Quiz-App', 
+                'HTTP-Referer': 'https://github.com/IzharAli786/quiz-generator', 
                 'X-Title': 'AI Interactive Quiz App'
             },
             body: JSON.stringify({
