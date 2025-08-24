@@ -11,7 +11,7 @@
 const OPENROUTER_API_KEY = "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";
 const API_URL = "https://openrouter.ai/api/v1/chat/completions";
 
-// OCR.space API key (free tier - register at ocr.space for y   our own key)
+// OCR.space API key (free tier - register at ocr.space for your own key)
 const OCR_API_KEY = "K81080572688957"; // Replace with your actual key
 const OCR_API_URL = "https://api.ocr.space/parse/image";
 
@@ -243,7 +243,9 @@ async function generateQuestionsWithAI() {
             },
             body: JSON.stringify({
                 model: "meta-llama/llama-3.1-70b-instruct",
-                messages: messages
+                messages: messages,
+                temperature: 0.7, // Add temperature for more reliable responses
+                max_tokens: 2048 // Ensure we have enough tokens for responses
             })
         });
 
@@ -278,7 +280,19 @@ async function generateQuestionsWithAI() {
                 throw new Error("Invalid questions format returned");
             }
             
-            questions = parsedQuestions.map(q => ({
+            // Add additional validation for each question
+            const validatedQuestions = parsedQuestions.filter(q => {
+                return q.question && 
+                       (q.type === 'multiple-choice' || q.type === 'true-false' || q.type === 'open-ended') &&
+                       (q.type !== 'open-ended' ? Array.isArray(q.options) && q.options.length > 0 : true) &&
+                       q.correctAnswer !== undefined;
+            });
+            
+            if (validatedQuestions.length === 0) {
+                throw new Error("No valid questions found in the response");
+            }
+            
+            questions = validatedQuestions.map(q => ({
                 question: q.question,
                 type: q.type || 'multiple-choice', // Default to multiple-choice if not specified
                 answers: q.options || [],
@@ -325,6 +339,8 @@ async function extractTextFromImage(imageData) {
         formData.append('isOverlayRequired', 'false');
         formData.append('iscreatesearchablepdf', 'false');
         formData.append('issearchablepdfhidetextlayer', 'false');
+        formData.append('scale', 'true'); // Add scaling option for better results
+        formData.append('detectOrientation', 'true'); // Detect text orientation
         
         const ocrResponse = await fetch(OCR_API_URL, {
             method: 'POST',
@@ -348,14 +364,17 @@ async function extractTextFromImage(imageData) {
         }
         
         if (!extractedText || extractedText.trim() === '') {
-            throw new Error('No text found in the image');
+            throw new Error('No text found in the image. Please try a clearer image with visible text.');
         }
         
         // Log the extracted text for debugging
         console.log('Raw extracted text:', extractedText);
         
+        // Clean up the extracted text - remove excessive spaces and line breaks
+        extractedText = extractedText.replace(/\s+/g, ' ').trim();
+        
         // Check if the text is too short
-        if (extractedText.trim().length < 10) {
+        if (extractedText.trim().length < 15) {
             throw new Error('The extracted text is too short. Please use an image with more readable text.');
         }
         
@@ -524,12 +543,14 @@ function handleImageUpload(e) {
     
     if (!file.type.match('image.*')) {
         showError('Please select an image file (JPEG, PNG, etc.)');
+        imageUpload.value = ''; // Clear the input
         return;
     }
     
     // Add file size validation
     if (file.size > 5 * 1024 * 1024) { // 5MB limit
         showError('Image file is too large. Please select an image smaller than 5MB.');
+        imageUpload.value = ''; // Clear the input
         return;
     }
     
@@ -569,6 +590,7 @@ function handleImageUpload(e) {
         statusElement.textContent = 'Error processing image';
         statusElement.classList.remove('processing');
         statusElement.classList.add('error');
+        imageUpload.value = ''; // Clear the input
     };
     reader.readAsDataURL(file);
 }
