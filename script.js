@@ -261,7 +261,7 @@ async function generateQuestionsWithAI() {
             model: "meta-llama/llama-3.1-70b-instruct",
             messages: [{ role: "user", content: prompt }],
             temperature: 0.7,
-            max_tokens: 2048
+            max_tokens: 1000000
         };
 
         console.log("Making API request with headers:", headers);
