@@ -8,11 +8,11 @@
 //
 // ===================================================================================
 
-const OPENROUTER_API_KEY = "";
+const OPENROUTER_API_KEY = "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";
 const API_URL = "https://openrouter.ai/api/v1/chat/completions";
 
 // OCR.space API key (free tier - register at ocr.space for y   our own key)
-const OCR_API_KEY = ""; // Replace with your actual key
+const OCR_API_KEY = "K81080572688957"; // Replace with your actual key
 const OCR_API_URL = "https://api.ocr.space/parse/image";
 
 // DOM Elements
