@@ -8,11 +8,11 @@
 //
 // ===================================================================================
 
-const OPENROUTER_API_KEY = "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";
+const OPENROUTER_API_KEY = "";
 const API_URL = "https://openrouter.ai/api/v1/chat/completions";
 
-// OCR.space API key (free tier - register at ocr.space for your own key)
-const OCR_API_KEY = "K81080572688957"; // Replace with your actual key
+// OCR.space API key (free tier - register at ocr.space for y   our own key)
+const OCR_API_KEY = ""; // Replace with your actual key
 const OCR_API_URL = "https://api.ocr.space/parse/image";
 
 // DOM Elements
@@ -233,71 +233,24 @@ async function generateQuestionsWithAI() {
     try {
         let messages = [{ role: "user", content: prompt }];
         
-        // Try multiple API approaches
-        let response;
-        let attempts = 0;
-        const maxAttempts = 3;
-        
-        while (attempts < maxAttempts) {
-            attempts++;
-            
-            try {
-                console.log(`API attempt ${attempts}...`);
-                
-                // Different header configurations for each attempt
-                let headers;
-                if (attempts === 1) {
-                    headers = {
-                        'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
-                        'Content-Type': 'application/json',
-                        'HTTP-Referer': window.location.origin,
-                        'X-Title': 'Interactive Quiz Generator'
-                    };
-                } else if (attempts === 2) {
-                    headers = {
-                        'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
-                        'Content-Type': 'application/json'
-                    };
-                } else {
-                    headers = {
-                        'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
-                        'Content-Type': 'application/json',
-                        'Origin': window.location.origin
-                    };
-                }
-                
-                response = await fetch(API_URL, {
-                    method: 'POST',
-                    headers: headers,
-                    body: JSON.stringify({
-                        model: "meta-llama/llama-3.1-70b-instruct",
-                        messages: messages,
-                        temperature: 0.7,
-                        max_tokens: 2048
-                    })
-                });
-                
-                if (response.ok) {
-                    console.log(`API attempt ${attempts} succeeded!`);
-                    break;
-                } else {
-                    const errorData = await response.json().catch(() => null);
-                    console.error(`Attempt ${attempts} failed:`, errorData);
-                    
-                    if (attempts === maxAttempts) {
-                        throw new Error(errorData?.error?.message || `API Error: ${response.status}`);
-                    }
-                }
-            } catch (fetchError) {
-                console.error(`Fetch attempt ${attempts} failed:`, fetchError);
-                if (attempts === maxAttempts) {
-                    throw fetchError;
-                }
-            }
-        }
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+                'Content-Type': 'application/json',
+                'HTTP-Referer': 'https://github.com/aakhalidhruv28/Interactive-Quiz-App', 
+                'X-Title': 'AI Interactive Quiz App'
+            },
+            body: JSON.stringify({
+                model: "meta-llama/llama-3.1-70b-instruct",
+                messages: messages
+            })
+        });
 
-        if (!response || !response.ok) {
-            throw new Error("All API attempts failed");
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => null);
+            const errorMsg = errorData?.error?.message || `API Error: ${response.status}`;
+            throw new Error(errorMsg);
         }
 
         const data = await response.json();
@@ -325,21 +278,9 @@ async function generateQuestionsWithAI() {
                 throw new Error("Invalid questions format returned");
             }
             
-            // Add additional validation for each question
-            const validatedQuestions = parsedQuestions.filter(q => {
-                return q.question && 
-                       (q.type === 'multiple-choice' || q.type === 'true-false' || q.type === 'open-ended') &&
-                       (q.type !== 'open-ended' ? Array.isArray(q.options) && q.options.length > 0 : true) &&
-                       q.correctAnswer !== undefined;
-            });
-            
-            if (validatedQuestions.length === 0) {
-                throw new Error("No valid questions found in the response");
-            }
-            
-            questions = validatedQuestions.map(q => ({
+            questions = parsedQuestions.map(q => ({
                 question: q.question,
-                type: q.type || 'multiple-choice',
+                type: q.type || 'multiple-choice', // Default to multiple-choice if not specified
                 answers: q.options || [],
                 correct_answer: q.correctAnswer
             }));
@@ -352,138 +293,19 @@ async function generateQuestionsWithAI() {
             
         } catch (parseError) {
             console.error("JSON parsing error:", parseError);
-            console.log("Raw response that failed to parse:", llmResponse);
             
-            // If JSON parsing fails, try a different model as fallback
-            console.log("Trying fallback model...");
-            return await tryFallbackModel(prompt);
+            // Fallback to generating basic questions
+            if (extractedText && extractedText.length < 50) {
+                throw new Error(`The extracted text "${extractedText}" is too short to generate a meaningful quiz. Please try a clearer image with more text.`);
+            } else {
+                throw new Error(`Could not generate quiz questions. The API returned an invalid response format. Please try again or use a different topic/image.`);
+            }
         }
 
     } catch (error) {
         console.error("Error generating quiz with AI:", error);
-        
-        // Try fallback model if primary fails
-        console.log("Primary model failed, trying fallback...");
-        return await tryFallbackModel(prompt);
-    }
-}
-
-// Fallback function to try a different model
-async function tryFallbackModel(prompt) {
-    try {
-        console.log("Attempting fallback model...");
-        
-        const response = await fetch(API_URL, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                model: "microsoft/wizardlm-2-8x22b", // Different model as fallback
-                messages: [{ role: "user", content: prompt }],
-                temperature: 0.8,
-                max_tokens: 1500
-            })
-        });
-
-        if (!response.ok) {
-            throw new Error(`Fallback model failed: ${response.status}`);
-        }
-
-        const data = await response.json();
-        const llmResponse = data.choices[0].message.content;
-        
-        console.log("Fallback API Response:", llmResponse);
-        
-        // Try to parse the fallback response
-        let jsonString = llmResponse;
-        const jsonStartIndex = llmResponse.indexOf('[');
-        const jsonEndIndex = llmResponse.lastIndexOf(']') + 1;
-        
-        if (jsonStartIndex >= 0 && jsonEndIndex > jsonStartIndex) {
-            jsonString = llmResponse.substring(jsonStartIndex, jsonEndIndex);
-        }
-        
-        const parsedQuestions = JSON.parse(jsonString);
-        
-        if (Array.isArray(parsedQuestions) && parsedQuestions.length > 0) {
-            questions = parsedQuestions.map(q => ({
-                question: q.question,
-                type: q.type || 'multiple-choice',
-                answers: q.options || [],
-                correct_answer: q.correctAnswer
-            }));
-            
-            quizData = {
-                settings: quizSettings,
-                questions: questions
-            };
-            
-            console.log("Fallback model succeeded!");
-            return;
-        } else {
-            throw new Error("Fallback model returned invalid data");
-        }
-        
-    } catch (fallbackError) {
-        console.error("Fallback model also failed:", fallbackError);
-        
-        // Last resort: Try with OpenAI-compatible endpoint
-        return await tryOpenAIFallback();
-    }
-}
-
-// OpenAI-style fallback
-async function tryOpenAIFallback() {
-    try {
-        console.log("Trying OpenAI-compatible fallback...");
-        
-        // Simplified prompt for better compatibility
-        const simplePrompt = `Create ${quizSettings.numQuestions} quiz questions about "${quizSettings.topic}". Return only a JSON array with this format:
-[{"question":"Your question here","type":"multiple-choice","options":["A","B","C","D"],"correctAnswer":"A"}]`;
-        
-        const response = await fetch(API_URL, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                model: "openai/gpt-3.5-turbo",
-                messages: [{ role: "user", content: simplePrompt }],
-                temperature: 0.7
-            })
-        });
-
-        if (response.ok) {
-            const data = await response.json();
-            const content = data.choices[0].message.content;
-            
-            try {
-                const parsed = JSON.parse(content.replace(/```json|```/g, ''));
-                if (Array.isArray(parsed) && parsed.length > 0) {
-                    questions = parsed.map(q => ({
-                        question: q.question,
-                        type: q.type || 'multiple-choice',
-                        answers: q.options || [],
-                        correct_answer: q.correctAnswer
-                    }));
-                    
-                    quizData = { settings: quizSettings, questions: questions };
-                    console.log("OpenAI fallback succeeded!");
-                    return;
-                }
-            } catch (e) {
-                console.error("OpenAI fallback parse error:", e);
-            }
-        }
-        
-        throw new Error("All fallback attempts failed");
-        
-    } catch (error) {
-        console.error("Final fallback failed:", error);
-        throw new Error("Unable to generate questions with AI. Please check your internet connection and try again.");
+        questions = [];
+        throw error; // Re-throw the error to be caught by startQuiz
     }
 }
 
@@ -503,8 +325,6 @@ async function extractTextFromImage(imageData) {
         formData.append('isOverlayRequired', 'false');
         formData.append('iscreatesearchablepdf', 'false');
         formData.append('issearchablepdfhidetextlayer', 'false');
-        formData.append('scale', 'true'); // Add scaling option for better results
-        formData.append('detectOrientation', 'true'); // Detect text orientation
         
         const ocrResponse = await fetch(OCR_API_URL, {
             method: 'POST',
@@ -528,17 +348,14 @@ async function extractTextFromImage(imageData) {
         }
         
         if (!extractedText || extractedText.trim() === '') {
-            throw new Error('No text found in the image. Please try a clearer image with visible text.');
+            throw new Error('No text found in the image');
         }
         
         // Log the extracted text for debugging
         console.log('Raw extracted text:', extractedText);
         
-        // Clean up the extracted text - remove excessive spaces and line breaks
-        extractedText = extractedText.replace(/\s+/g, ' ').trim();
-        
         // Check if the text is too short
-        if (extractedText.trim().length < 15) {
+        if (extractedText.trim().length < 10) {
             throw new Error('The extracted text is too short. Please use an image with more readable text.');
         }
         
@@ -707,14 +524,12 @@ function handleImageUpload(e) {
     
     if (!file.type.match('image.*')) {
         showError('Please select an image file (JPEG, PNG, etc.)');
-        imageUpload.value = ''; // Clear the input
         return;
     }
     
     // Add file size validation
     if (file.size > 5 * 1024 * 1024) { // 5MB limit
         showError('Image file is too large. Please select an image smaller than 5MB.');
-        imageUpload.value = ''; // Clear the input
         return;
     }
     
@@ -754,7 +569,6 @@ function handleImageUpload(e) {
         statusElement.textContent = 'Error processing image';
         statusElement.classList.remove('processing');
         statusElement.classList.add('error');
-        imageUpload.value = ''; // Clear the input
     };
     reader.readAsDataURL(file);
 }
