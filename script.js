@@ -357,7 +357,7 @@ async function generateQuestionsWithAI() {
 
 // Enhanced intelligent question generator
 function generateIntelligentQuestions(topic, numQuestions, questionTypes, difficulty, language) {
-    console.log(`Generating intelligent questions for: ${topic}`);
+    console.log(`Generating intelligent questions for: ${topic}, Number: ${numQuestions}, Types: ${questionTypes}`);
     
     const questions = [];
     const topicLower = topic.toLowerCase();
@@ -368,24 +368,33 @@ function generateIntelligentQuestions(topic, numQuestions, questionTypes, diffic
             easy: [
                 { q: "What is the chemical symbol for water?", a: ["H2O", "CO2", "O2", "H2SO4"], correct: "H2O" },
                 { q: "What planet is closest to the Sun?", a: ["Mercury", "Venus", "Earth", "Mars"], correct: "Mercury" },
-                { q: "Plants make their own food through photosynthesis.", tf: true }
+                { q: "Plants make their own food through photosynthesis.", tf: true },
+                { q: "What gas do plants absorb from the atmosphere?", a: ["Carbon dioxide", "Oxygen", "Nitrogen", "Hydrogen"], correct: "Carbon dioxide" },
+                { q: "The human body has 206 bones.", tf: true },
+                { q: "What is the hardest natural substance?", a: ["Diamond", "Gold", "Iron", "Quartz"], correct: "Diamond" }
             ],
             medium: [
                 { q: "What is the speed of light in vacuum?", a: ["300,000 km/s", "150,000 km/s", "450,000 km/s", "600,000 km/s"], correct: "300,000 km/s" },
-                { q: "DNA stands for Deoxyribonucleic Acid.", tf: true }
+                { q: "DNA stands for Deoxyribonucleic Acid.", tf: true },
+                { q: "What is the pH of pure water?", a: ["7", "5", "9", "1"], correct: "7" },
+                { q: "Electrons have a positive charge.", tf: false }
             ],
             hard: [
-                { q: "What is Heisenberg's uncertainty principle?", open: "The uncertainty principle states that you cannot simultaneously know both the exact position and momentum of a particle" }
+                { q: "What is Heisenberg's uncertainty principle?", open: "The uncertainty principle states that you cannot simultaneously know both the exact position and momentum of a particle" },
+                { q: "Explain photosynthesis.", open: "Photosynthesis is the process by which plants convert light energy into chemical energy using chlorophyll" }
             ]
         },
         history: {
             easy: [
                 { q: "World War II ended in which year?", a: ["1945", "1944", "1946", "1943"], correct: "1945" },
-                { q: "The Great Wall of China was built to keep out invaders.", tf: true }
+                { q: "The Great Wall of China was built to keep out invaders.", tf: true },
+                { q: "Who discovered America?", a: ["Christopher Columbus", "George Washington", "Napoleon", "Julius Caesar"], correct: "Christopher Columbus" },
+                { q: "The pyramids were built in Egypt.", tf: true }
             ],
             medium: [
                 { q: "Who was the first President of the United States?", a: ["George Washington", "Thomas Jefferson", "John Adams", "Benjamin Franklin"], correct: "George Washington" },
-                { q: "The Roman Empire fell in 476 AD.", tf: true }
+                { q: "The Roman Empire fell in 476 AD.", tf: true },
+                { q: "Which war was fought from 1914-1918?", a: ["World War I", "World War II", "Civil War", "Cold War"], correct: "World War I" }
             ],
             hard: [
                 { q: "Explain the causes of World War I.", open: "World War I was caused by a complex mix of factors including imperialism, alliance systems, nationalism, and the assassination of Archduke Franz Ferdinand" }
@@ -394,11 +403,14 @@ function generateIntelligentQuestions(topic, numQuestions, questionTypes, diffic
         geography: {
             easy: [
                 { q: "What is the capital of France?", a: ["Paris", "London", "Berlin", "Madrid"], correct: "Paris" },
-                { q: "Africa is the largest continent.", tf: true }
+                { q: "Africa is the largest continent.", tf: true },
+                { q: "What is the smallest country in the world?", a: ["Vatican City", "Monaco", "Liechtenstein", "San Marino"], correct: "Vatican City" },
+                { q: "Mount Everest is the tallest mountain.", tf: true }
             ],
             medium: [
                 { q: "Which river is the longest in the world?", a: ["Nile", "Amazon", "Yangtze", "Mississippi"], correct: "Nile" },
-                { q: "Australia is both a country and a continent.", tf: true }
+                { q: "Australia is both a country and a continent.", tf: true },
+                { q: "What is the capital of Australia?", a: ["Canberra", "Sydney", "Melbourne", "Brisbane"], correct: "Canberra" }
             ],
             hard: [
                 { q: "Describe the formation of the Himalayan mountain range.", open: "The Himalayas were formed by the collision of the Indian and Eurasian tectonic plates approximately 50 million years ago" }
@@ -407,11 +419,14 @@ function generateIntelligentQuestions(topic, numQuestions, questionTypes, diffic
         mathematics: {
             easy: [
                 { q: "What is 15 + 25?", a: ["40", "35", "45", "50"], correct: "40" },
-                { q: "Pi is approximately 3.14.", tf: true }
+                { q: "Pi is approximately 3.14.", tf: true },
+                { q: "What is 12 × 8?", a: ["96", "84", "104", "88"], correct: "96" },
+                { q: "A circle has 360 degrees.", tf: true }
             ],
             medium: [
                 { q: "What is the square root of 144?", a: ["12", "14", "10", "16"], correct: "12" },
-                { q: "A triangle has 180 degrees.", tf: true }
+                { q: "A triangle has 180 degrees.", tf: true },
+                { q: "What is 25% of 200?", a: ["50", "40", "60", "45"], correct: "50" }
             ],
             hard: [
                 { q: "Explain the Pythagorean theorem.", open: "The Pythagorean theorem states that in a right triangle, the square of the hypotenuse equals the sum of squares of the other two sides: a² + b² = c²" }
@@ -439,15 +454,14 @@ function generateIntelligentQuestions(topic, numQuestions, questionTypes, diffic
         questionPool = [...knowledgeBase[category][difficultyLevel]];
     }
 
-    // Generate topic-specific questions
+    // Generate topic-specific questions to ensure we have enough
     const topicQuestions = generateTopicSpecificQuestions(topic, numQuestions, questionTypes, difficulty, language);
     questionPool = [...questionPool, ...topicQuestions];
 
-    // Select and format questions based on types
-    let questionsAdded = 0;
+    console.log(`Question pool size: ${questionPool.length}`);
+
+    // Calculate distribution more accurately
     const typeDistribution = {};
-    
-    // Calculate how many of each type to add
     questionTypes.forEach((type, index) => {
         typeDistribution[type] = Math.floor(numQuestions / questionTypes.length);
         if (index < numQuestions % questionTypes.length) {
@@ -455,14 +469,18 @@ function generateIntelligentQuestions(topic, numQuestions, questionTypes, diffic
         }
     });
 
+    console.log("Type distribution:", typeDistribution);
+
     // Add questions of each type
     for (const [type, count] of Object.entries(typeDistribution)) {
         let addedOfType = 0;
+        console.log(`Adding ${count} questions of type: ${type}`);
         
+        // First, try to add from knowledge base
         for (const poolQ of questionPool) {
-            if (addedOfType >= count || questionsAdded >= numQuestions) break;
+            if (addedOfType >= count) break;
             
-            if (type === 'multiple-choice' && poolQ.a) {
+            if (type === 'multiple-choice' && poolQ.a && poolQ.correct) {
                 questions.push({
                     question: poolQ.q,
                     type: 'multiple-choice',
@@ -470,7 +488,6 @@ function generateIntelligentQuestions(topic, numQuestions, questionTypes, diffic
                     correct_answer: poolQ.correct
                 });
                 addedOfType++;
-                questionsAdded++;
             } else if (type === 'true-false' && poolQ.tf !== undefined) {
                 questions.push({
                     question: poolQ.q,
@@ -479,7 +496,6 @@ function generateIntelligentQuestions(topic, numQuestions, questionTypes, diffic
                     correct_answer: poolQ.tf ? 'True' : 'False'
                 });
                 addedOfType++;
-                questionsAdded++;
             } else if (type === 'open-ended' && poolQ.open) {
                 questions.push({
                     question: poolQ.q,
@@ -488,66 +504,125 @@ function generateIntelligentQuestions(topic, numQuestions, questionTypes, diffic
                     correct_answer: poolQ.open
                 });
                 addedOfType++;
-                questionsAdded++;
             }
         }
+
+        // If we still need more questions of this type, generate them
+        while (addedOfType < count) {
+            const generatedQ = generateSingleQuestion(topic, type, addedOfType + 1);
+            questions.push(generatedQ);
+            addedOfType++;
+        }
+
+        console.log(`Added ${addedOfType} questions of type ${type}`);
     }
 
+    console.log(`Total questions generated: ${questions.length}`);
     return questions.slice(0, numQuestions);
+}
+
+function generateSingleQuestion(topic, type, questionNumber) {
+    switch (type) {
+        case 'multiple-choice':
+            return {
+                question: `What is an important aspect of ${topic}? (Question ${questionNumber})`,
+                type: 'multiple-choice',
+                answers: [
+                    `Core principles of ${topic}`,
+                    'Unrelated option A',
+                    'Unrelated option B',
+                    'Unrelated option C'
+                ],
+                correct_answer: `Core principles of ${topic}`
+            };
+        
+        case 'true-false':
+            const statements = [
+                `${topic} is a subject worth studying.`,
+                `Understanding ${topic} can be beneficial.`,
+                `${topic} has practical applications.`,
+                `Research in ${topic} continues to evolve.`
+            ];
+            return {
+                question: statements[questionNumber % statements.length],
+                type: 'true-false',
+                answers: ['True', 'False'],
+                correct_answer: 'True'
+            };
+        
+        case 'open-ended':
+            const openQuestions = [
+                `Explain the importance of ${topic}.`,
+                `What are the key concepts in ${topic}?`,
+                `How does ${topic} impact our understanding?`,
+                `Describe the main principles of ${topic}.`
+            ];
+            return {
+                question: openQuestions[questionNumber % openQuestions.length],
+                type: 'open-ended',
+                answers: [],
+                correct_answer: `${topic} encompasses important concepts and principles that contribute to knowledge and understanding in this field.`
+            };
+        
+        default:
+            return {
+                question: `What is ${topic}?`,
+                type: 'multiple-choice',
+                answers: [`A field of study about ${topic}`, 'Option B', 'Option C', 'Option D'],
+                correct_answer: `A field of study about ${topic}`
+            };
+    }
 }
 
 function generateTopicSpecificQuestions(topic, numQuestions, questionTypes, difficulty, language) {
     const questions = [];
+    const questionsPerType = Math.ceil(numQuestions / questionTypes.length);
     
-    // Generate multiple choice questions
+    // Generate multiple questions for each type
     if (questionTypes.includes('multiple-choice')) {
-        questions.push({
-            q: `What is the main concept behind ${topic}?`,
-            a: [
-                `Understanding ${topic} principles`,
-                'Unrelated concept A',
-                'Unrelated concept B',
-                'Unrelated concept C'
-            ],
-            correct: `Understanding ${topic} principles`
-        });
-        
-        questions.push({
-            q: `Which of the following is most associated with ${topic}?`,
-            a: [
-                `Key aspects of ${topic}`,
-                'Random option 1',
-                'Random option 2',
-                'Random option 3'
-            ],
-            correct: `Key aspects of ${topic}`
-        });
+        for (let i = 0; i < questionsPerType; i++) {
+            questions.push({
+                q: `What is characteristic of ${topic}? (${i + 1})`,
+                a: [
+                    `Essential ${topic} knowledge`,
+                    'Irrelevant information',
+                    'Random facts',
+                    'Unrelated data'
+                ],
+                correct: `Essential ${topic} knowledge`
+            });
+        }
     }
     
-    // Generate true/false questions
     if (questionTypes.includes('true-false')) {
-        questions.push({
-            q: `${topic} is an important subject of study.`,
-            tf: true
-        });
+        const tfStatements = [
+            `${topic} is relevant to modern studies.`,
+            `Understanding ${topic} requires careful analysis.`,
+            `${topic} has historical significance.`,
+            `Research in ${topic} continues today.`
+        ];
         
-        questions.push({
-            q: `Learning about ${topic} can be beneficial.`,
-            tf: true
-        });
+        for (let i = 0; i < questionsPerType && i < tfStatements.length; i++) {
+            questions.push({
+                q: tfStatements[i],
+                tf: true
+            });
+        }
     }
     
-    // Generate open-ended questions
     if (questionTypes.includes('open-ended')) {
-        questions.push({
-            q: `Explain the significance of ${topic}.`,
-            open: `${topic} is significant because it provides important knowledge and understanding in its field of study.`
-        });
+        const openQuestions = [
+            `Describe the main features of ${topic}.`,
+            `What makes ${topic} important?`,
+            `How would you explain ${topic} to someone?`
+        ];
         
-        questions.push({
-            q: `What are the key principles of ${topic}?`,
-            open: `The key principles of ${topic} include fundamental concepts and methodologies that define this area of study.`
-        });
+        for (let i = 0; i < questionsPerType && i < openQuestions.length; i++) {
+            questions.push({
+                q: openQuestions[i],
+                open: `${topic} represents a significant area of study with various important aspects and applications.`
+            });
+        }
     }
     
     return questions;
